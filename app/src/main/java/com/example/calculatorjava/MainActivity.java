@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
 //  입력된 숫자를 연산하는 변수, resultview에 출력할 수 있도록 하는 변수
     double resultNumber = 0;
     String operator = "=";
-    String lastoperator = " ";
+    String lastoperator = "+";
 
 //  view 바인딩 선언하기
 //  ActivityMainBinding이란 <layout> 태그로 선언된 XML을 위해 자동으로 만들어지는
@@ -47,10 +47,11 @@ public class MainActivity extends AppCompatActivity {
 //      메로리적인 측면에서 훨씬 절약적임을 알 수 있음
 
         if(isFirstInput) {
-            activityMainBinding.resultTextView.setText(getButtonText); //
+            activityMainBinding.resultTextView.setText(getButtonText);
             isFirstInput = false; // false처리를 해주지 않으면 계속 true를 반환하여 1이 append되지 않음
             if(operator.equals("=")) {
                 activityMainBinding.mathTextView.setText(null); // text를 초기화하는 방법 "" or null
+                isOperatorClick = false;
             }
         }else {
             if(activityMainBinding.resultTextView.getText().toString().equals("0")) {
@@ -77,13 +78,20 @@ public class MainActivity extends AppCompatActivity {
 // 사칙연산 메소드
     public void operatorClick (View view) {
         isOperatorClick = true; // 연산자가 클릭됨
-        if(isFirstInput) { // 연산자를 클릭한 다음에 또 클릭했을 때 뒤에 눌린 연산자로 바뀌도록
-            operator = view.getTag().toString(); // 현재 눌린 연산자를 저장
-            String getMathText = activityMainBinding.mathTextView.getText().toString(); // 문자열을 저장하여 뒷 부분을 잘라냄
-            String subString = getMathText.substring(0, getMathText.length() - 2); // mathText 문자열을 삭제 = 0번째부터 mathText의 총 길이에서부터 -2까지 삭제한다
-                                                                                   // -2의 이유? 함께 설정해준 공백 + 연산자
-            activityMainBinding.mathTextView.setText(subString); // 자른 문자열 저장
-            activityMainBinding.mathTextView.append(operator + " ");
+        lastoperator = view.getTag().toString();
+        if(isFirstInput) { // 연산자를 클릭한 뒤 또 클릭했을 때 뒤에 눌린 연산자로 바뀌도록
+            if(operator.equals("=")) { // 연속으로 연산할 때 result값이 mathtextView로 이동하여 더하기되어짐
+                operator = view.getTag().toString();
+                resultNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString());
+                activityMainBinding.mathTextView.setText(resultNumber + " " + operator + " ");
+            } else {
+                operator = view.getTag().toString(); // 현재 눌린 연산자를 저장
+                String getMathText = activityMainBinding.mathTextView.getText().toString(); // 문자열을 저장
+                String subString = getMathText.substring(0, getMathText.length() - 2); // mathText 문자열을 삭제, 0번째부터 mathText의 총 길이에서부터 -2까지 삭제한다
+                // -2의 이유? 함께 설정해준 공백 + 연산자
+                activityMainBinding.mathTextView.setText(subString); // 자른 문자열 저장
+                activityMainBinding.mathTextView.append(operator + " "); // 뒤에 눌린 연산자 저장 + 공백
+            }
         }else {
             inputNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString()); // double형의 객체로 바꾸는 메소드
 
@@ -107,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             inputNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString()); // double형의 객체로 바꾸는 메소드
 
             resultNumber = calculator(resultNumber, inputNumber, operator);
-            lastoperator = operator;
             activityMainBinding.resultTextView.setText(String.valueOf(resultNumber)); // resultNumber는 double형이니 변환해주고 사용
             isFirstInput = true; // result에 반영 후 새로 input을 받아야 하니 true를 반환하도록
             operator = view.getTag().toString(); // operator에 각 tag에 등록한 값을 넣기
@@ -139,12 +146,14 @@ public class MainActivity extends AppCompatActivity {
 
 
 // AC 버튼
+// 선언했던 변수들 모두 초기화하기
     public void allClearButtonClick(View view) {
         activityMainBinding.resultTextView.setText("0"); // 초기화
         activityMainBinding.mathTextView.setText("");
         resultNumber = 0;
         operator = "=";
         isFirstInput = true; // 처음부터 다시 입력할 수 있도록
+        isOperatorClick = false;
     }
 
     // 소수점이 append 될 수 있도록
