@@ -12,9 +12,12 @@ import com.example.calculatorjava.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity {
 // boolean 반환타입으로 첫 번재 숫자를 입력하는지, 두 번재 숫자를 입력하는지 체크하기
     boolean isFirstInput = true;
+    boolean isOperatorClick = false; // 연산자가 눌렸는지 확인하기 위한 변수 (처음에는 눌리지 않았으니 false를 설정)
+    double inputNumber = 0;
 //  입력된 숫자를 연산하는 변수, resultview에 출력할 수 있도록 하는 변수
     double resultNumber = 0;
-    String operator = "+";
+    String operator = "=";
+    String lastoperator = " ";
 
 //  view 바인딩 선언하기
 //  ActivityMainBinding이란 <layout> 태그로 선언된 XML을 위해 자동으로 만들어지는
@@ -46,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
         if(isFirstInput) {
             activityMainBinding.resultTextView.setText(getButtonText); //
             isFirstInput = false; // false처리를 해주지 않으면 계속 true를 반환하여 1이 append되지 않음
+            if(operator.equals("=")) {
+                activityMainBinding.mathTextView.setText(null); // text를 초기화하는 방법 "" or null
+            }
         }else {
             if(activityMainBinding.resultTextView.getText().toString().equals("0")) {
                 Toast.makeText(this, "o으로 시작되는 숫자는 없습니다.", Toast.LENGTH_SHORT).show();
@@ -68,31 +74,76 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-
+// 사칙연산 메소드
     public void operatorClick (View view) {
-        double inputNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString()); // double형의 객체로 바꾸는 메소드
+        isOperatorClick = true; // 연산자가 클릭됨
+        if(isFirstInput) { // 연산자를 클릭한 다음에 또 클릭했을 때 뒤에 눌린 연산자로 바뀌도록
+            operator = view.getTag().toString(); // 현재 눌린 연산자를 저장
+            String getMathText = activityMainBinding.mathTextView.getText().toString(); // 문자열을 저장하여 뒷 부분을 잘라냄
+            String subString = getMathText.substring(0, getMathText.length() - 2); // mathText 문자열을 삭제 = 0번째부터 mathText의 총 길이에서부터 -2까지 삭제한다
+                                                                                   // -2의 이유? 함께 설정해준 공백 + 연산자
+            activityMainBinding.mathTextView.setText(subString); // 자른 문자열 저장
+            activityMainBinding.mathTextView.append(operator + " ");
+        }else {
+            inputNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString()); // double형의 객체로 바꾸는 메소드
 
-        if(operator.equals("+")) {
-            resultNumber = resultNumber + inputNumber;
-        }else if(operator.equals("-")) {
-            resultNumber = resultNumber - inputNumber;
-        }else if(operator.equals("X")) {
-            resultNumber = resultNumber * inputNumber;
-        }else if(operator.equals("/")) {
-            resultNumber = resultNumber / inputNumber;
+            resultNumber = calculator(resultNumber, inputNumber, operator);
+
+            activityMainBinding.resultTextView.setText(String.valueOf(resultNumber)); // resultNumber는 double형이니 변환해주고 사용
+            isFirstInput = true; // result에 반영 후 새로 input을 받아야 하니 true를 반환하도록
+            operator = view.getTag().toString(); // operator에 각 tag에 등록한 값을 넣기
+            activityMainBinding.mathTextView.append(inputNumber + " " + operator + " ");
+        }
+    }
+
+    public void equalsButtonClick (View view) {
+        if(isFirstInput) { // =이 연속적으로 눌리는 것을 방지
+            if(isOperatorClick) {
+                activityMainBinding.mathTextView.setText(resultNumber + " " + lastoperator + " " + inputNumber + " =");
+                resultNumber = calculator(resultNumber, inputNumber, lastoperator);
+                activityMainBinding.resultTextView.setText(String.valueOf(resultNumber));
+            }
+        } else {
+            inputNumber = Double.parseDouble(activityMainBinding.resultTextView.getText().toString()); // double형의 객체로 바꾸는 메소드
+
+            resultNumber = calculator(resultNumber, inputNumber, operator);
+            lastoperator = operator;
+            activityMainBinding.resultTextView.setText(String.valueOf(resultNumber)); // resultNumber는 double형이니 변환해주고 사용
+            isFirstInput = true; // result에 반영 후 새로 input을 받아야 하니 true를 반환하도록
+            operator = view.getTag().toString(); // operator에 각 tag에 등록한 값을 넣기
+            activityMainBinding.mathTextView.append(inputNumber + " " + operator + " ");
+        }
+    }
+// 사칙연산 기능 구현
+    private double calculator(double resultNumber, double inputNumber, String operator) {
+        switch (operator) {
+            case "=" : // = 추가로 초기값도 =이 되어야 함
+                resultNumber = inputNumber;
+                break;
+            case "+" :
+                resultNumber = resultNumber + inputNumber;
+                break;
+            case "-" :
+                resultNumber = resultNumber - inputNumber;
+                break;
+            case "X" :
+                resultNumber = resultNumber * inputNumber;
+                break;
+            case "/" :
+                resultNumber = resultNumber / inputNumber;
+                break;
         }
 
-        activityMainBinding.resultTextView.setText(String.valueOf(resultNumber)); // resultNumber는 double형이니 변환해주고 사용
-        isFirstInput = true; // result에 반영 후 새로 input을 받아야 하니 true를 반환하도록
-        operator = view.getTag().toString(); // operator에 각 tag에 등록한 값을 넣기
-        activityMainBinding.mathTextView.append(inputNumber + " " + operator + " ");
+        return resultNumber;
     }
+
+
 // AC 버튼
     public void allClearButtonClick(View view) {
         activityMainBinding.resultTextView.setText("0"); // 초기화
         activityMainBinding.mathTextView.setText("");
         resultNumber = 0;
-        operator = "+";
+        operator = "=";
         isFirstInput = true; // 처음부터 다시 입력할 수 있도록
     }
 
@@ -109,28 +160,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "연속 소수점은 불가능 합니다.", Toast.LENGTH_SHORT).show();
             } else {
                 activityMainBinding.resultTextView.append(view.getTag().toString());
-            }
-        }
-    }
-
-    // 소수점 포인트 처리 메소드
-    // 1. 기본적으로 소수점이 append될 수 있도록 처리 (여기서 0 뒤에도 소수점이 찍힐 수 있도록 0 + 태그 메소드를 입력하기)
-    // 2. 실행 후 예외 발생 처리하기
-    // 2-1. 연속적으로 소수점 입력이 불가능 하도록
-    // 2-1-1. 현재 소수점을 가지고 있는지 체크 후, 가지고 있다면 Toast를 띄우고 || 가지고 있지 않다면 append를 띄우도록 하기
-
-    // 필요한 메소드를 먼저 생성한 다음, xml파일로 이동하여 onclick 잊지 말고 먼저 걸어주기
-    // 값이 필요할 때는
-
-    public void pointButtonclick2 (View view) {
-        if(isFirstInput) {
-            activityMainBinding.resultTextView.setText("0" + view.getTag().toString());
-            isFirstInput = false;
-        }else  {
-            if(activityMainBinding.resultTextView.getText().toString().contains(".")) { // contains = 해당 문자열(.)을 이미 가지고 있는지
-                Toast.makeText(this , "연속 소수점은 입력이 불가능합니다.", Toast.LENGTH_SHORT).show();
-            }else  {
-                activityMainBinding.resultTextView.append(view.getTag().toString()); // .이 없을 시에는 append로 소수점을 추가해줄 수 있도록 처리
             }
         }
     }
